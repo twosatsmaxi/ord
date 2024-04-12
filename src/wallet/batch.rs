@@ -33,11 +33,13 @@ mod transactions;
 pub struct Output {
   pub commit: Txid,
   pub commit_psbt: Option<String>,
+  pub commit_hex: Option<String>,
   pub inscriptions: Vec<InscriptionInfo>,
   pub parent: Option<InscriptionId>,
   pub reveal: Txid,
   pub reveal_broadcast: bool,
   pub reveal_psbt: Option<String>,
+  pub reveal_hex: Option<String>,
   pub rune: Option<RuneInfo>,
   pub total_fees: u64,
 }

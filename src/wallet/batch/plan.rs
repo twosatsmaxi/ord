@@ -1,3 +1,4 @@
+use bitcoincore_rpc::RawTx;
 use super::*;
 
 pub struct Plan {
@@ -79,8 +80,10 @@ impl Plan {
       return Ok(Some(Box::new(self.output(
         commit_tx.txid(),
         Some(commit_psbt),
+        Some(commit_tx.raw_hex()),
         reveal_tx.txid(),
         false,
+        Some(reveal_tx.raw_hex()),
         Some(base64::engine::general_purpose::STANDARD.encode(reveal_psbt.serialize())),
         total_fees,
         self.inscriptions.clone(),
@@ -130,6 +133,9 @@ impl Plan {
     if let Some(ref rune_info) = rune {
       let commit = consensus::encode::deserialize::<Transaction>(&signed_commit_tx)?;
       let reveal = consensus::encode::deserialize::<Transaction>(&signed_reveal_tx)?;
+      // print reveal hex and signed reveal hex
+        println!("Reveal hex: {}", reveal.raw_hex());
+        println!("Signed reveal hex: {}", signed_reveal_tx.raw_hex());
 
       Ok(Some(Box::new(wallet.wait_for_maturation(
         &rune_info.rune.rune,
@@ -138,8 +144,10 @@ impl Plan {
         self.output(
           commit.txid(),
           None,
+          Some(commit.raw_hex()),
           reveal.txid(),
           false,
+          Some(reveal.raw_hex()),
           None,
           total_fees,
           self.inscriptions.clone(),
@@ -162,9 +170,11 @@ impl Plan {
       Ok(Some(Box::new(self.output(
         commit_txid,
         None,
+        Some(signed_commit_tx.raw_hex()),
         reveal,
         true,
         None,
+        Some(signed_reveal_tx.raw_hex()),
         total_fees,
         self.inscriptions.clone(),
         rune,
@@ -184,9 +194,11 @@ impl Plan {
     &self,
     commit: Txid,
     commit_psbt: Option<String>,
+    commit_hex: Option<String>,
     reveal: Txid,
     reveal_broadcast: bool,
     reveal_psbt: Option<String>,
+    reveal_hex: Option<String>,
     total_fees: u64,
     inscriptions: Vec<Inscription>,
     rune: Option<RuneInfo>,
@@ -241,11 +253,13 @@ impl Plan {
     Output {
       commit,
       commit_psbt,
+      commit_hex,
       inscriptions: inscriptions_output,
       parent: self.parent_info.clone().map(|info| info.id),
       reveal,
       reveal_broadcast,
       reveal_psbt,
+      reveal_hex,
       rune,
       total_fees,
     }
