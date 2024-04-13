@@ -40,6 +40,22 @@ impl Default for Plan {
 }
 
 impl Plan {
+
+  fn get_recovery_key(
+    client: &Client,
+    recovery_key_pair: TweakedKeyPair,
+    network: Network,
+  ) -> Result<String> {
+    let recovery_private_key =
+        PrivateKey::new(recovery_key_pair.to_inner().secret_key(), network).to_wif();
+    Ok(format!(
+      "rawtr({})#{}",
+      recovery_private_key,
+      client
+          .get_descriptor_info(&format!("rawtr({})", recovery_private_key))?
+          .checksum
+    ))
+  }
   pub(crate) fn inscribe(
     &self,
     locked_utxos: &BTreeSet<OutPoint>,
@@ -84,6 +100,11 @@ impl Plan {
         reveal_tx.txid(),
         false,
         Some(reveal_tx.raw_hex()),
+        Some(Self::get_recovery_key(
+          wallet.bitcoin_client(),
+          recovery_key_pair,
+          wallet.chain().network(),
+        )?),
         Some(base64::engine::general_purpose::STANDARD.encode(reveal_psbt.serialize())),
         total_fees,
         self.inscriptions.clone(),
@@ -148,6 +169,11 @@ impl Plan {
           reveal.txid(),
           false,
           Some(reveal.raw_hex()),
+          Some(Self::get_recovery_key(
+            wallet.bitcoin_client(),
+            recovery_key_pair,
+            wallet.chain().network(),
+          )?),
           None,
           total_fees,
           self.inscriptions.clone(),
@@ -175,6 +201,11 @@ impl Plan {
         true,
         None,
         Some(signed_reveal_tx.raw_hex()),
+        Some(Self::get_recovery_key(
+          wallet.bitcoin_client(),
+          recovery_key_pair,
+          wallet.chain().network(),
+        )?),
         total_fees,
         self.inscriptions.clone(),
         rune,
@@ -199,6 +230,7 @@ impl Plan {
     reveal_broadcast: bool,
     reveal_psbt: Option<String>,
     reveal_hex: Option<String>,
+    recovery_descriptor: Option<String>,
     total_fees: u64,
     inscriptions: Vec<Inscription>,
     rune: Option<RuneInfo>,
@@ -260,6 +292,7 @@ impl Plan {
       reveal_broadcast,
       reveal_psbt,
       reveal_hex,
+      recovery_descriptor,
       rune,
       total_fees,
     }

@@ -40,6 +40,7 @@ pub struct Output {
   pub reveal_broadcast: bool,
   pub reveal_psbt: Option<String>,
   pub reveal_hex: Option<String>,
+  pub recovery_descriptor: Option<String>,
   pub rune: Option<RuneInfo>,
   pub total_fees: u64,
 }
