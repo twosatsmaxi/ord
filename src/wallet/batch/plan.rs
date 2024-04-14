@@ -13,6 +13,8 @@ pub struct Plan {
   pub(crate) parent_info: Option<ParentInfo>,
   pub(crate) postages: Vec<Amount>,
   pub(crate) reinscribe: bool,
+  pub(crate) commitment: Option<OutPoint>,
+  pub(crate) key: Option<String>,
   pub(crate) reveal_fee_rate: FeeRate,
   pub(crate) reveal_satpoints: Vec<(SatPoint, TxOut)>,
   pub(crate) satpoint: Option<SatPoint>,
@@ -34,6 +36,8 @@ impl Default for Plan {
       reinscribe: false,
       reveal_fee_rate: 1.0.try_into().unwrap(),
       reveal_satpoints: Vec::new(),
+      commitment: None,
+      key: None,
       satpoint: None,
     }
   }

@@ -49,6 +49,8 @@ impl Batch {
       no_limit: self.shared.no_limit,
       parent_info,
       postages,
+      commitment: self.shared.commitment,
+      key: self.shared.key,
       reinscribe: batchfile.reinscribe,
       reveal_fee_rate: self.shared.fee_rate,
       reveal_satpoints,

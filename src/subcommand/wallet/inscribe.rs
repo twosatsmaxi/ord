@@ -86,6 +86,8 @@ impl Inscribe {
       reinscribe: self.reinscribe,
       reveal_fee_rate: self.shared.fee_rate,
       reveal_satpoints: Vec::new(),
+      commitment: self.shared.commitment,
+      key: self.shared.key,
       satpoint: if let Some(sat) = self.sat {
         Some(wallet.find_sat_in_outputs(sat)?)
       } else {

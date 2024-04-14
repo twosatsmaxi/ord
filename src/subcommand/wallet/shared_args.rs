@@ -15,6 +15,10 @@ pub(super) struct SharedArgs {
   pub(crate) dry_run: bool,
   #[arg(long, alias = "nobackup", help = "Do not back up recovery key.")]
   pub(crate) no_backup: bool,
+  #[clap(long, help = "Don't make a commit transaction; just create a reveal tx that reveals the inscription committed to by output <COMMITMENT>. Requires the same --key as was used to make the commitment. Implies --no-backup. This doesn't work if the --key has ever been backed up to the wallet. When using --commitment, the reveal tx will create a change output unless --reveal-fee is set to '0 sats', in which case the whole commitment will go to postage and fees.")]
+  pub(crate) commitment: Option<OutPoint>,
+  #[clap(long, help = "Use provided recovery key instead of a random one.")]
+  pub(crate) key: Option<String>,
   #[arg(
     long,
     alias = "nolimit",
