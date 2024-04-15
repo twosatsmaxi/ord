@@ -410,7 +410,14 @@ impl Plan {
     }
 
     let secp256k1 = Secp256k1::new();
-    let key_pair = UntweakedKeyPair::new(&secp256k1, &mut rand::thread_rng());
+    let key_pair = if self.key.is_some() {
+      secp256k1::KeyPair::from_secret_key(&secp256k1, &PrivateKey::from_wif(&self.key.clone().unwrap())?.inner)
+    }
+    else {
+       UntweakedKeyPair::new(&secp256k1, &mut rand::thread_rng())
+    };
+
+
     let (public_key, _parity) = XOnlyPublicKey::from_keypair(&key_pair);
 
     let reveal_script = Inscription::append_batch_reveal_script(
@@ -762,7 +769,7 @@ impl Plan {
           previous_output,
           script_sig: script::Builder::new().into_script(),
           witness: Witness::new(),
-          sequence: if etching {
+          sequence: if etching && Self.commitment.is_none() {
             Sequence::from_height(Runestone::COMMIT_CONFIRMATIONS - 1)
           } else {
             Sequence::ENABLE_RBF_NO_LOCKTIME
