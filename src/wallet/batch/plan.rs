@@ -575,18 +575,26 @@ impl Plan {
       target_value += TARGET_POSTAGE;
     }
 
-    let unsigned_commit_tx = TransactionBuilder::new(
-      satpoint,
-      wallet_inscriptions,
-      utxos.clone(),
-      locked_utxos.clone(),
-      runic_utxos,
-      commit_tx_address.clone(),
-      commit_change,
-      self.commit_fee_rate,
-      Target::Value(target_value),
-    )
-    .build_transaction()?;
+    let unsigned_commit_tx = if self.commitment.is_some() {
+      Transaction {
+        version: 0,
+        lock_time: LockTime::ZERO,
+        input: vec![],
+        output: vec![],
+      }
+    } else {
+      TransactionBuilder::new(
+        satpoint,
+        wallet_inscriptions,
+        utxos.clone(),
+        locked_utxos.clone(),
+        runic_utxos,
+        commit_tx_address.clone(),
+        commit_change,
+        self.commit_fee_rate,
+        Target::Value(target_value),
+      ).build_transaction()?
+    };
 
     let (vout, _commit_output) = unsigned_commit_tx
       .output
@@ -769,6 +777,7 @@ impl Plan {
           previous_output,
           script_sig: script::Builder::new().into_script(),
           witness: Witness::new(),
+          // if reveal is being broadcasted separately, ignore commit confirmations, but this is cool, can be used for cool things.
           sequence: if etching && Self.commitment.is_none() {
             Sequence::from_height(Runestone::COMMIT_CONFIRMATIONS - 1)
           } else {
