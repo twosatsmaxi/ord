@@ -50,6 +50,11 @@ impl Batch {
       parent_info,
       postages,
       commitment: self.shared.commitment,
+      commitment_output: if self.shared.commitment.is_some() {
+        Some(wallet.bitcoin_client().get_raw_transaction_info(&self.shared.commitment.unwrap().txid, None)?.vout[self.shared.commitment.unwrap().vout as usize].clone())
+      } else {
+        None
+      },
       key: self.shared.key,
       reinscribe: batchfile.reinscribe,
       reveal_fee_rate: self.shared.fee_rate,
