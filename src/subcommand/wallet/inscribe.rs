@@ -80,6 +80,7 @@ impl Inscribe {
       )?],
       mode: batch::Mode::SeparateOutputs,
       no_backup: self.shared.no_backup,
+      commit_only: self.shared.commit_only,
       no_limit: self.shared.no_limit,
       parent_info: wallet.get_parent_info(self.parent)?,
       postages: vec![self.postage.unwrap_or(TARGET_POSTAGE)],

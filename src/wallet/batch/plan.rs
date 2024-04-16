@@ -10,6 +10,7 @@ pub struct Plan {
   pub(crate) inscriptions: Vec<Inscription>,
   pub(crate) mode: Mode,
   pub(crate) no_backup: bool,
+  pub(crate) commit_only: bool,
   pub(crate) no_limit: bool,
   pub(crate) parent_info: Option<ParentInfo>,
   pub(crate) postages: Vec<Amount>,
@@ -32,6 +33,7 @@ impl Default for Plan {
       inscriptions: Vec::new(),
       mode: Mode::SharedOutput,
       no_backup: false,
+      commit_only: false,
       no_limit: false,
       parent_info: None,
       postages: vec![Amount::from_sat(10_000)],
@@ -156,7 +158,10 @@ impl Plan {
 
     let signed_reveal_tx = result.hex;
 
-    if !self.no_backup {
+    println!("Signed reveal tx hex in almost last step: {}", signed_reveal_tx.raw_hex());
+
+    if !self.no_backup && self.key.is_none() && !self.commit_only{
+      println!("backed up recovery key");
       Self::backup_recovery_key(wallet, recovery_key_pair)?;
     }
 
@@ -429,6 +434,9 @@ impl Plan {
     } else {
       UntweakedKeyPair::new(&secp256k1, &mut rand::thread_rng())
     };
+    if self.commit_only {
+      eprintln!("use --key {} to reveal this commitment", PrivateKey::new(key_pair.secret_key(), chain.network()).to_wif());
+    }
 
 
     let (public_key, _parity) = XOnlyPublicKey::from_keypair(&key_pair);
@@ -465,6 +473,9 @@ impl Plan {
                 }) = self.parent_info.clone()
     {
       reveal_inputs.push(location.outpoint);
+      println!("Parent info location: {:?}", location.outpoint);
+      println!("Parent info destination: {:?}", destination.script_pubkey());
+      println!("Parent info tx_out: {:?}", tx_out.value);
       reveal_outputs.push(TxOut {
         script_pubkey: destination.script_pubkey(),
         value: tx_out.value,
@@ -480,7 +491,9 @@ impl Plan {
     reveal_inputs.push(OutPoint::null());
 
     for (i, destination) in self.destinations.iter().enumerate() {
-      reveal_outputs.push(TxOut {
+      println!("Destination script pubkey: {:?}", destination.script_pubkey());
+      reveal_outputs.push(
+        TxOut {
         script_pubkey: destination.script_pubkey(),
         value: match self.mode {
           Mode::SeparateOutputs | Mode::SatPoints => self.postages[i].to_sat(),
@@ -634,7 +647,7 @@ impl Plan {
         reveal_inputs,
         &reveal_script,
       );
-    println!("reveal tx built");
+    println!("reveal tx built post the 2nd call, hex is {}", reveal_tx.raw_hex());
     //
 
       for output in reveal_tx.output.iter() {
@@ -647,16 +660,18 @@ impl Plan {
       let mut prevouts = Vec::new();
 
       if let Some(parent_info) = self.parent_info.clone() {
+        println!("Parent info tx_out: {:?}", parent_info.tx_out);
         prevouts.push(parent_info.tx_out);
       }
 
       if self.mode == Mode::SatPoints {
+        println!("Reveal satpoints: {:?}", self.reveal_satpoints);
         for (_satpoint, txout) in self.reveal_satpoints.iter() {
           prevouts.push(txout.clone());
         }
       }
 
-
+    println!("vout is {}", vout);
     let prevout = if self.commitment.is_some() {
         TxOut {
           value: self.commitment_output.clone().unwrap().value.to_sat(),
@@ -666,8 +681,10 @@ impl Plan {
         unsigned_commit_tx.output[vout].clone()
       };
       prevouts.push(prevout);
+      println!("prevouts: {:?}", prevouts);
 
       let mut sighash_cache = SighashCache::new(&mut reveal_tx);
+      println!("commit input: {}", commit_input);
 
       let sighash = sighash_cache
           .taproot_script_spend_signature_hash(
@@ -698,6 +715,8 @@ impl Plan {
 
       witness.push(reveal_script);
       witness.push(&control_block.serialize());
+      // total witness pushed size
+        println!("total witness size: {}", witness.len());
 
       let recovery_key_pair = key_pair.tap_tweak(&secp256k1, taproot_spend_info.merkle_root());
 
@@ -734,9 +753,10 @@ impl Plan {
       let total_fees = if self.commitment.is_some() {
         0
       } else {
-        Self::calculate_fee(&unsigned_commit_tx, &utxos) + Self::calculate_fee(&reveal_tx, &utxos)
+        Self::calculate_fee(&unsigned_commit_tx, &utxos)
+            + if !self.commit_only { Self::calculate_fee(&reveal_tx, &utxos) } else { 0 }
       };
-
+      println!("reached till almost the last step");
       match (Runestone::decipher(&reveal_tx), runestone) {
         (Some(actual), Some(expected)) => assert_eq!(
           actual,
@@ -836,6 +856,7 @@ impl Plan {
             );
             txin.witness.push(script);
             txin.witness.push(&control_block.serialize());
+            println!("total witness size: {}", txin.witness.len());
           } else {
             txin.witness = Witness::from_slice(&[&[0; SCHNORR_SIGNATURE_SIZE]]);
           }
@@ -843,7 +864,7 @@ impl Plan {
 
         fee_rate.fee(reveal_tx.vsize())
       };
-
+      println!("reveal tx built in build_reveal_transaction: {}", reveal_tx.raw_hex());
       (reveal_tx, fee)
     }
 

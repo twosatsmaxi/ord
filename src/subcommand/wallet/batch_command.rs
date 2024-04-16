@@ -49,6 +49,7 @@ impl Batch {
       inscriptions,
       mode: batchfile.mode,
       no_backup: self.shared.no_backup,
+      commit_only: self.shared.commit_only,
       no_limit: self.shared.no_limit,
       parent_info,
       postages,

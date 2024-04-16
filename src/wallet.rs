@@ -1,4 +1,3 @@
-use bitcoincore_rpc::RawTx;
 use {
   super::*,
   base64::{self, Engine},
@@ -310,6 +309,7 @@ impl Wallet {
     // eprintln!("Reveal(Signed) tx hex: {}", reveal.raw_hex());
 
     self.save_etching(rune, &commit, &reveal, output.clone())?;
+    println!("Saved etching for rune {}", rune);
 
     loop {
       if SHUTTING_DOWN.load(atomic::Ordering::Relaxed) {
