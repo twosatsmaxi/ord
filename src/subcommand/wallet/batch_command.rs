@@ -34,9 +34,12 @@ impl Batch {
         .map(|(satpoint, txout)| (satpoint.outpoint, txout.clone())),
     );
 
-    if let Some(etching) = batchfile.etching {
-      Self::check_etching(&wallet, &etching)?;
+    if self.shared.commitment.is_none() {
+      if let Some(etching) = batchfile.etching {
+        Self::check_etching(&wallet, &etching)?;
+      }
     }
+
 
     batch::Plan {
       commit_fee_rate: self.shared.commit_fee_rate.unwrap_or(self.shared.fee_rate),

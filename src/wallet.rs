@@ -306,8 +306,8 @@ impl Wallet {
   ) -> Result<batch::Output> {
     eprintln!("Waiting for rune commitment {} to mature…", commit.txid());
     // print the signed commit tx hex and reveal tx hex
-    eprintln!("Commit(Signed) tx hex: {}", commit.raw_hex());
-    eprintln!("Reveal(Signed) tx hex: {}", reveal.raw_hex());
+    // eprintln!("Commit(Signed) tx hex: {}", commit.raw_hex());
+    // eprintln!("Reveal(Signed) tx hex: {}", reveal.raw_hex());
 
     self.save_etching(rune, &commit, &reveal, output.clone())?;
 

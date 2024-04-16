@@ -174,13 +174,13 @@ impl Plan {
           Some(commit.raw_hex()),
           reveal.txid(),
           false,
+          None,
           Some(reveal.raw_hex()),
           Some(Self::get_recovery_key(
             wallet.bitcoin_client(),
             recovery_key_pair,
             wallet.chain().network(),
           )?),
-          None,
           total_fees,
           self.inscriptions.clone(),
           rune.clone(),
@@ -596,19 +596,20 @@ impl Plan {
       ).build_transaction()?
     };
 
-    let (vout, _commit_output) = unsigned_commit_tx
-        .output
-        .iter()
-        .enumerate()
-        .find(|(_vout, output)| output.script_pubkey == commit_tx_address.script_pubkey())
-        .expect("should find sat commit/inscription output");
-
+    let mut vout = 0;
     reveal_inputs[commit_input] = if self.commitment.is_some() {
       self.commitment.unwrap()
     } else {
+      let (internal_vout, _commit_output) = unsigned_commit_tx
+          .output
+          .iter()
+          .enumerate()
+          .find(|(_vout, output)| output.script_pubkey == commit_tx_address.script_pubkey())
+          .expect("should find sat commit/inscription output");
+      vout = internal_vout;
       OutPoint {
         txid: unsigned_commit_tx.txid(),
-        vout: vout.try_into().unwrap(),
+        vout: internal_vout.try_into().unwrap(),
       }
     };
 
