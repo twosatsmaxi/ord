@@ -117,12 +117,18 @@ impl Plan {
         rune,
       ))));
     }
-
-    let signed_commit_tx = wallet
+    println!("came here finally");
+    let signed_commit_tx = if self.commitment.is_some()  {
+      Vec::new()
+    } else {
+      wallet
         .bitcoin_client()
         .sign_raw_transaction_with_wallet(&commit_tx, None, None)?
-        .hex;
-
+        .hex
+      };
+    // print commit tex hex and reveal commit hex
+    println!("Commit hex: {}", commit_tx.raw_hex());
+    println!("Reveal tx hex: {}", reveal_tx.raw_hex());
     let result = wallet.bitcoin_client().sign_raw_transaction_with_wallet(
       &reveal_tx,
       Some(
@@ -147,17 +153,23 @@ impl Plan {
       format!("Failed to sign reveal transaction: {:?}", result.errors)
     );
 
+
     let signed_reveal_tx = result.hex;
 
     if !self.no_backup {
       Self::backup_recovery_key(wallet, recovery_key_pair)?;
     }
 
-    let commit_txid = wallet
-        .bitcoin_client()
-        .send_raw_transaction(&signed_commit_tx)?;
+    let commit_txid = if self.commitment.is_none() {
+      wallet
+          .bitcoin_client()
+          .send_raw_transaction(&signed_commit_tx)?
+    } else {
+        self.commitment.unwrap().txid
+    };
 
-    if let Some(ref rune_info) = rune {
+    if self.commitment.is_none() {
+      let Some(ref rune_info) = rune else { todo!() };
       let commit = consensus::encode::deserialize::<Transaction>(&signed_commit_tx)?;
       let reveal = consensus::encode::deserialize::<Transaction>(&signed_reveal_tx)?;
       // print reveal hex and signed reveal hex
@@ -565,6 +577,7 @@ impl Plan {
       &reveal_script,
     );
 
+
     let mut target_value = reveal_fee;
 
     if self.mode != Mode::SatPoints {
@@ -621,6 +634,8 @@ impl Plan {
         reveal_inputs,
         &reveal_script,
       );
+    println!("reveal tx built");
+    //
 
       for output in reveal_tx.output.iter() {
         ensure!(
@@ -735,7 +750,7 @@ impl Plan {
         (None, None) => {}
       }
 
-      let rune = rune.map(|(destination, rune, vout)| RuneInfo {
+    let rune = rune.map(|(destination, rune, vout)| RuneInfo {
         destination: destination.map(|destination| uncheck(&destination)),
         location: vout.map(|vout| OutPoint {
           txid: reveal_tx.txid(),
@@ -743,8 +758,8 @@ impl Plan {
         }),
         rune,
       });
-
-      Ok(Transactions {
+    println!("here finally");
+    Ok(Transactions {
         commit_tx: unsigned_commit_tx,
         recovery_key_pair,
         reveal_tx,
