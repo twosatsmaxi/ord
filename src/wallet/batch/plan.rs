@@ -87,6 +87,33 @@ impl Plan {
       wallet.get_change_address()?,
     )?;
 
+    let result = wallet.bitcoin_client().sign_raw_transaction_with_wallet(
+      &reveal_tx,
+      Some(
+        &commit_tx
+            .output
+            .iter()
+            .enumerate()
+            .map(|(vout, output)| SignRawTransactionInput {
+              txid: commit_tx.txid(),
+              vout: vout.try_into().unwrap(),
+              script_pub_key: output.script_pubkey.clone(),
+              redeem_script: None,
+              amount: Some(Amount::from_sat(output.value)),
+            })
+            .collect::<Vec<SignRawTransactionInput>>(),
+      ),
+      None,
+    )?;
+
+    ensure!(
+      result.complete,
+      format!("Failed to sign reveal transaction: {:?}", result.errors)
+    );
+
+    // signed reveal tx hex
+    println!("Signed reveal tx hex: {}", result.hex.raw_hex());
+
     if self.dry_run {
       let commit_psbt = wallet
           .bitcoin_client()
@@ -128,33 +155,6 @@ impl Plan {
         .sign_raw_transaction_with_wallet(&commit_tx, None, None)?
         .hex
       };
-    // print commit tex hex and reveal commit hex
-    println!("Commit hex: {}", commit_tx.raw_hex());
-    println!("Reveal tx hex: {}", reveal_tx.raw_hex());
-    let result = wallet.bitcoin_client().sign_raw_transaction_with_wallet(
-      &reveal_tx,
-      Some(
-        &commit_tx
-            .output
-            .iter()
-            .enumerate()
-            .map(|(vout, output)| SignRawTransactionInput {
-              txid: commit_tx.txid(),
-              vout: vout.try_into().unwrap(),
-              script_pub_key: output.script_pubkey.clone(),
-              redeem_script: None,
-              amount: Some(Amount::from_sat(output.value)),
-            })
-            .collect::<Vec<SignRawTransactionInput>>(),
-      ),
-      None,
-    )?;
-
-    ensure!(
-      result.complete,
-      format!("Failed to sign reveal transaction: {:?}", result.errors)
-    );
-
 
     let signed_reveal_tx = result.hex;
 
