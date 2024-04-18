@@ -71,12 +71,20 @@ rpcport={bitcoind_port}
     let yaml = serde_yaml::to_string(&batch::File {
       etching: Some(batch::Etching {
         divisibility: 0,
-        rune: "HOOOOOOOOOOOOTERS".parse::<SpacedRune>().unwrap(),
-        supply: "1000".parse().unwrap(),
-        premine: "1000".parse().unwrap(),
+        rune: "HOOOOOOOOTERS".parse::<SpacedRune>().unwrap(),
+        supply: "1000000".parse().unwrap(),
+        premine: "200000".parse().unwrap(),
         symbol: '¢',
-        terms: None,
-        turbo: false,
+        terms: Some(batch::Terms {
+          amount: "1000".parse().unwrap(),
+          cap: 800,
+          height: Some(batch::Range {
+            start: Some(840001),
+            end: Some(857500),
+          }),
+          ..default()
+        }),
+        turbo: true,
       }),
       inscriptions: vec![batch::Entry {
         file: Some("env/inscription.txt".into()),

@@ -436,9 +436,6 @@ impl Plan {
     } else {
       UntweakedKeyPair::new(&secp256k1, &mut rand::thread_rng())
     };
-    if self.commit_only {
-      eprintln!("use --key {} to reveal this commitment", PrivateKey::new(key_pair.secret_key(), chain.network()).to_wif());
-    }
 
 
     let (public_key, _parity) = XOnlyPublicKey::from_keypair(&key_pair);
@@ -627,7 +624,12 @@ impl Plan {
         },
       ).build_transaction()?
     };
-
+    if self.commit_only {
+      eprintln!("use --key {} --commitment {}:0 --reveal-fee-rate 2  to reveal this commitment",
+                PrivateKey::new(key_pair.secret_key(), chain.network()).to_wif(),
+                unsigned_commit_tx.txid()
+      );
+    }
     let mut vout = 0;
     reveal_inputs[commit_input] = if self.commitment.is_some() {
       if reveal_fee != Amount::from_sat(0) {
