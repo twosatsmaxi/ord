@@ -61,7 +61,7 @@ impl Batch {
       },
       key: self.shared.key,
       reinscribe: batchfile.reinscribe,
-      reveal_fee_rate: self.shared.fee_rate,
+      reveal_fee_rate: self.shared.reveal_fee_rate.unwrap_or(self.shared.fee_rate),
       reveal_satpoints,
       satpoint: if let Some(sat) = batchfile.sat {
         Some(wallet.find_sat_in_outputs(sat)?)

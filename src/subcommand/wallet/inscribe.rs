@@ -85,7 +85,7 @@ impl Inscribe {
       parent_info: wallet.get_parent_info(self.parent)?,
       postages: vec![self.postage.unwrap_or(TARGET_POSTAGE)],
       reinscribe: self.reinscribe,
-      reveal_fee_rate: self.shared.fee_rate,
+      reveal_fee_rate: self.shared.reveal_fee_rate.unwrap_or(self.shared.fee_rate),
       reveal_satpoints: Vec::new(),
       commitment: self.shared.commitment,
       commitment_output: if self.shared.commitment.is_some() {

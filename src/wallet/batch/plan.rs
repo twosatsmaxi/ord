@@ -516,7 +516,7 @@ impl Plan {
         destination = Some(reveal_change.clone());
 
         reveal_outputs.push(TxOut {
-          script_pubkey: reveal_change.into(),
+          script_pubkey: reveal_change.clone().into(),
           value: TARGET_POSTAGE.to_sat(),
         });
 
@@ -618,12 +618,26 @@ impl Plan {
         commit_tx_address.clone(),
         commit_change,
         self.commit_fee_rate,
-        Target::Value(target_value),
+        if self.commit_only {
+          Target::NoChange(reveal_fee + Amount::from_sat(total_postage))
+        } else {
+          Target::Value(target_value)
+        },
       ).build_transaction()?
     };
 
     let mut vout = 0;
     reveal_inputs[commit_input] = if self.commitment.is_some() {
+      if reveal_fee != Amount::from_sat(0) {
+        // find first reveal output index matching change address
+        let (change_output_index, _) = reveal_outputs
+            .iter()
+            .enumerate()
+            .find(|(_, output)| output.script_pubkey == reveal_change.clone().script_pubkey())
+            .expect("should find change output");
+        let new_change_value_in_sat = self.commitment_output.clone().unwrap().value.to_sat() - total_postage - reveal_fee.to_sat();
+        reveal_outputs[change_output_index].value = new_change_value_in_sat;
+      }
       self.commitment.unwrap()
     } else {
       let (internal_vout, _commit_output) = unsigned_commit_tx
@@ -648,6 +662,7 @@ impl Plan {
         &reveal_script,
       );
     println!("reveal tx built post the 2nd call, hex is {}", reveal_tx.raw_hex());
+    println!("fee is {}", _fee);
     //
 
       for output in reveal_tx.output.iter() {

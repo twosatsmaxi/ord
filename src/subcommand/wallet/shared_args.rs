@@ -11,6 +11,8 @@ pub(super) struct SharedArgs {
   pub(crate) compress: bool,
   #[arg(long, help = "Use fee rate of <FEE_RATE> sats/vB.")]
   pub(crate) fee_rate: FeeRate,
+  #[arg(long, help = "Use reveal fee rate of <FEE_RATE> sats/vB.")]
+  pub(crate) reveal_fee_rate: Option<FeeRate>,
   #[arg(long, help = "Don't sign or broadcast transactions.")]
   pub(crate) dry_run: bool,
   #[arg(long, alias = "nobackup", help = "Do not back up recovery key.")]
