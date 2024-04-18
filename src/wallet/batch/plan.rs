@@ -376,7 +376,9 @@ impl Plan {
       }
     }
 
-    let satpoint = if let Some(satpoint) = self.satpoint {
+    let satpoint = if self.commitment.is_some() {
+      SatPoint::from_str("0000000000000000000000000000000000000000000000000000000000000000:0:0")?
+    } else  if let Some(satpoint) = self.satpoint {
       satpoint
     } else {
       let inscribed_utxos = wallet_inscriptions
