@@ -1,3 +1,5 @@
+use std::sync::mpsc::Sender;
+use crate::index::event::Event;
 use super::*;
 
 pub mod balances;
@@ -69,8 +71,10 @@ impl Subcommand {
       Self::Parse(parse) => parse.run(),
       Self::Runes => runes::run(settings),
       Self::Server(server) => {
-        let index = Arc::new(Index::open(&settings)?);
+        let (event_sender, mut event_receiver) = tokio::sync::mpsc::channel(1024);
+        let index = Arc::new(Index::open_with_event_sender(&settings, Some(event_sender)));
         let handle = axum_server::Handle::new();
+
         LISTENERS.lock().unwrap().push(handle.clone());
         server.run(settings, index, handle)
       }
